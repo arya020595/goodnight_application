@@ -1,0 +1,2 @@
+class SleepRecordsController < ApplicationController
+end
