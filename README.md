@@ -17,7 +17,6 @@ Make sure you have the following installed:
 - **Ruby** (version 3.x or higher)
 - **Rails** (version 6.x or higher)
 - **PostgreSQL** (or another supported database)
-- **Node.js** (for managing assets)
 
 ### Steps to Run the Application
 
