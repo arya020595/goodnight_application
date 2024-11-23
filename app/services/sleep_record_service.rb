@@ -40,6 +40,7 @@ class SleepRecordService
   # Fetch sleep records based on user_id, page, and per parameters
   def fetch_records(user_id, page, per)
     SleepRecord.where(user_id: user_id)
+               .where.not(clock_in: nil)
                .recent_first
                .page(page)
                .per(per)
