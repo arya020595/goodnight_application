@@ -1,30 +1,54 @@
-# app/controllers/sleep_records_controller.rb
-class SleepRecordsController < ApplicationController
-  def create
-    sleep_record_service = SleepRecordService.new
-    result = sleep_record_service.create_sleep_record(sleep_record_params)
+# app/controllers/users_controller.rb
+class UsersController < ApplicationController
+  def follow
+    user_service = UserService.new
+    result = user_service.follow(params[:id], follow_params[:followed_id])
 
     if result[:success]
-      render json: ResponseService.success(result[:sleep_record])
+      render json: ResponseService.success({ id: params[:id], name: result[:user].name,
+                                             message: result[:message] })
     else
       render json: ResponseService.error(422, result[:errors].join(', '))
     end
   end
 
-  def index
-    sleep_record_service = SleepRecordService.new
-    result = sleep_record_service.fetch_sleep_records(params[:user_id], params[:page], params[:per] || 10)
+  def unfollow
+    user_service = UserService.new
+    result = user_service.unfollow(params[:id], follow_params[:followed_id])
 
     if result[:success]
-      render json: ResponseService.success(result[:records], result[:meta])
+      render json: ResponseService.success({ id: params[:id], name: result[:user].name,
+                                             message: result[:message] })
     else
-      render json: ResponseService.error(422, 'Unable to fetch sleep records')
+      render json: ResponseService.error(422, result[:errors])
+    end
+  end
+
+  def followings_sleep_records
+    user_service = UserService.new
+    result = user_service.followings_sleep_records(params[:id], params[:page], params[:per] || 10)
+
+    if result[:success]
+      render json: ResponseService.success(result[:data], result[:meta])
+    else
+      render json: ResponseService.error(404, 'No sleep records found for followings')
+    end
+  end
+
+  def average_sleep_duration
+    user_service = UserService.new
+    result = user_service.average_sleep_duration(params[:id])
+
+    if result[:success]
+      render json: ResponseService.success(result[:data])
+    else
+      render json: ResponseService.error(404, result[:data][:message])
     end
   end
 
   private
 
-  def sleep_record_params
-    params.require(:sleep_record).permit(:user_id, :clock_in, :clock_out)
+  def follow_params
+    params.require(:follow).permit(:followed_id)
   end
 end
