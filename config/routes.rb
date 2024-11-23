@@ -14,6 +14,7 @@ Rails.application.routes.draw do
       post :follow
       delete :unfollow
       get :followings_sleep_records
+      get :average_sleep_duration
     end
   end
 end
