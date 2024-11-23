@@ -21,15 +21,13 @@ class UsersController < ApplicationController
     user = User.find(params[:id])
     followings = user.followed_users
 
-    # Using Arel for safe SQL expression
-    sleep_record_duration = Arel.sql('clock_out - clock_in')
-
-    # Fetch sleep records from the last week, ordered by duration
     sleep_records = SleepRecord.where(user: followings)
-                               .where('clock_in >= ?', 1.week.ago)
-                               .order(sleep_record_duration.desc) # Use Arel for ordering
+                               .from_last_week
+                               .order_by_duration
+                               .includes(:user)
+                               .page(params[:page])
+                               .per(params[:per] || 10) # Use dynamic `per`, default to 10
 
-    # Prepare the response
     result = sleep_records.map do |record|
       {
         user_id: record.user.id,
@@ -40,7 +38,14 @@ class UsersController < ApplicationController
       }
     end
 
-    render json: result
+    render json: {
+      records: result,
+      meta: {
+        current_page: sleep_records.current_page,
+        total_pages: sleep_records.total_pages,
+        total_count: sleep_records.total_count
+      }
+    }
   end
 
   private

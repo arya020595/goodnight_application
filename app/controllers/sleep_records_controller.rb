@@ -9,8 +9,19 @@ class SleepRecordsController < ApplicationController
   end
 
   def index
-    sleep_records = SleepRecord.where(user_id: params[:user_id]).order(created_at: :desc)
-    render json: sleep_records
+    sleep_records = SleepRecord.where(user_id: params[:user_id])
+                               .recent_first
+                               .page(params[:page])
+                               .per(params[:per] || 10) # Use dynamic `per`, default to 10
+
+    render json: {
+      records: sleep_records,
+      meta: {
+        current_page: sleep_records.current_page,
+        total_pages: sleep_records.total_pages,
+        total_count: sleep_records.total_count
+      }
+    }
   end
 
   private
