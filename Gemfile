@@ -39,6 +39,7 @@ gem 'kaminari', '~> 1.2', '>= 1.2.2'
 
 group :development, :test do
   # See https://guides.rubyonrails.org/debugging_rails_applications.html#debugging-with-the-debug-gem
+  gem 'byebug', '~> 11.1', '>= 11.1.3'
   gem 'debug', platforms: %i[mri windows]
   gem 'faker', '~> 2.20'
 end
