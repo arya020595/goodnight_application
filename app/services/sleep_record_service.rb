@@ -10,22 +10,58 @@ class SleepRecordService
     end
   end
 
-  # Fetch sleep records with pagination and provide analytical insights
   def fetch_sleep_records(user_id, page, per)
     # Fetch sleep records
-    sleep_records = SleepRecord.where(user_id: user_id)
-                               .recent_first
-                               .page(page)
-                               .per(per)
+    sleep_records = fetch_records(user_id, page, per)
 
     # Calculate analytical insights
+    insights = calculate_analytical_insights(sleep_records)
+
+    # Classify the sleep records based on duration
+    classified_records = classify_sleep_records(sleep_records)
+
+    # Return results with both sleep records and meta information
+    {
+      success: true,
+      records: classified_records,
+      meta: {
+        current_page: sleep_records.current_page,
+        total_pages: sleep_records.total_pages,
+        total_count: sleep_records.total_count,
+        average_duration: insights[:average_duration],
+        min_duration: insights[:min_duration],
+        max_duration: insights[:max_duration]
+      }
+    }
+  end
+
+  private
+
+  # Fetch sleep records based on user_id, page, and per parameters
+  def fetch_records(user_id, page, per)
+    SleepRecord.where(user_id: user_id)
+               .recent_first
+               .page(page)
+               .per(per)
+  end
+
+  # Calculate average, min, and max durations for the sleep records
+  def calculate_analytical_insights(sleep_records)
     durations = sleep_records.map { |record| record.clock_out - record.clock_in }
     average_duration = durations.sum / durations.size.to_f if durations.any?
     min_duration = durations.min
     max_duration = durations.max
 
-    # Classify the sleep records based on duration
-    classified_records = sleep_records.map do |record|
+    {
+      average_duration: average_duration ? format_duration(average_duration) : nil,
+      min_duration: min_duration ? format_duration(min_duration) : nil,
+      max_duration: max_duration ? format_duration(max_duration) : nil
+    }
+  end
+
+  # Classify each sleep record based on its duration (short, normal, long)
+  def classify_sleep_records(sleep_records)
+    sleep_records.map do |record|
       duration_seconds = record.clock_out - record.clock_in
       category = classify_sleep(duration_seconds)
 
@@ -42,25 +78,9 @@ class SleepRecordService
         }
       }
     end
-
-    # Return results with both sleep records and meta information
-    {
-      success: true,
-      records: classified_records,
-      meta: {
-        current_page: sleep_records.current_page,
-        total_pages: sleep_records.total_pages,
-        total_count: sleep_records.total_count,
-        average_duration: average_duration ? format_duration(average_duration) : nil,
-        min_duration: min_duration ? format_duration(min_duration) : nil,
-        max_duration: max_duration ? format_duration(max_duration) : nil
-      }
-    }
   end
 
-  private
-
-  # Classify sleep duration
+  # Classify sleep based on duration (short, normal, long)
   def classify_sleep(duration_seconds)
     if duration_seconds < 6.hours.to_i
       'short sleep'
@@ -71,7 +91,7 @@ class SleepRecordService
     end
   end
 
-  # Format duration in hours and minutes for analytical purposes
+  # Format a duration (in seconds) into hours and minutes
   def format_duration(duration_seconds)
     hours = (duration_seconds / 3600).floor
     minutes = ((duration_seconds % 3600) / 60).round
