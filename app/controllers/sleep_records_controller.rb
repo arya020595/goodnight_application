@@ -2,7 +2,7 @@
 class SleepRecordsController < ApplicationController
   def create
     sleep_record_service = SleepRecordService.new
-    result = sleep_record_service.create_sleep_record(sleep_record_params)
+    result = sleep_record_service.create_sleep_record(sleep_record_params.merge(user_id: params[:user_id]))
 
     if result[:success]
       render json: ResponseService.success(result[:sleep_record])
@@ -24,7 +24,8 @@ class SleepRecordsController < ApplicationController
 
   private
 
+  # Permit only the necessary parameters
   def sleep_record_params
-    params.require(:sleep_record).permit(:user_id, :clock_in, :clock_out)
+    params.require(:sleep_record).permit(:clock_in, :clock_out)
   end
 end

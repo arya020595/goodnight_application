@@ -6,7 +6,7 @@ class UserService
     follow = Follow.new(follower_id: user.id, followed_id: followed_id)
 
     if follow.save
-      { success: true, message: 'Followed successfully' }
+      { success: true, message: 'Followed successfully', user: user, follow: follow }
     else
       { success: false, errors: follow.errors.full_messages }
     end
@@ -18,7 +18,7 @@ class UserService
     follow = Follow.find_by(follower_id: user.id, followed_id: followed_id)
 
     if follow&.destroy
-      { success: true, message: 'Unfollowed successfully' }
+      { success: true, message: 'Unfollowed successfully', user: user, follow: follow }
     else
       { success: false, errors: 'Unable to unfollow' }
     end
