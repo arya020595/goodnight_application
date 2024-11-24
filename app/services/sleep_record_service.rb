@@ -1,5 +1,8 @@
 # app/services/sleep_record_service.rb
 class SleepRecordService
+  include SleepRecordFormatter
+  include FormatDuration
+
   # Create a new sleep record
   def create_sleep_record(sleep_record_params)
     sleep_record = SleepRecord.new(sleep_record_params)
@@ -11,16 +14,10 @@ class SleepRecordService
   end
 
   def fetch_sleep_records(user_id, page, per)
-    # Fetch sleep records
     sleep_records = fetch_records(user_id, page, per)
-
-    # Calculate analytical insights
     insights = calculate_analytical_insights(sleep_records)
+    classified_records = format_sleep_records(sleep_records)
 
-    # Classify the sleep records based on duration
-    classified_records = classify_sleep_records(sleep_records)
-
-    # Return results with both sleep records and meta information
     {
       success: true,
       records: classified_records,
@@ -54,48 +51,9 @@ class SleepRecordService
     max_duration = durations.max
 
     {
-      average_duration: average_duration ? format_duration(average_duration) : nil,
-      min_duration: min_duration ? format_duration(min_duration) : nil,
-      max_duration: max_duration ? format_duration(max_duration) : nil
+      average_duration: average_duration ? format_duration_in_hours_and_minutes(average_duration) : nil,
+      min_duration: min_duration ? format_duration_in_hours_and_minutes(min_duration) : nil,
+      max_duration: max_duration ? format_duration_in_hours_and_minutes(max_duration) : nil
     }
-  end
-
-  # Classify each sleep record based on its duration (short, normal, long)
-  def classify_sleep_records(sleep_records)
-    sleep_records.map do |record|
-      duration_seconds = record.clock_out - record.clock_in
-      category = classify_sleep(duration_seconds)
-
-      {
-        user_id: record.user.id,
-        user_name: record.user.name,
-        clock_in: record.clock_in,
-        clock_out: record.clock_out,
-        duration: {
-          total_seconds: duration_seconds,
-          hours: (duration_seconds / 3600).floor,
-          minutes: ((duration_seconds % 3600) / 60).round,
-          category: category
-        }
-      }
-    end
-  end
-
-  # Classify sleep based on duration (short, normal, long)
-  def classify_sleep(duration_seconds)
-    if duration_seconds < 6.hours.to_i
-      'short sleep'
-    elsif duration_seconds.between?(6.hours.to_i, 9.hours.to_i)
-      'normal sleep'
-    else
-      'long sleep'
-    end
-  end
-
-  # Format a duration (in seconds) into hours and minutes
-  def format_duration(duration_seconds)
-    hours = (duration_seconds / 3600).floor
-    minutes = ((duration_seconds % 3600) / 60).round
-    { hours: hours, minutes: minutes }
   end
 end

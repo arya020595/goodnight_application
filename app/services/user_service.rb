@@ -1,5 +1,8 @@
 # app/services/user_service.rb
 class UserService
+  include SleepRecordFormatter
+  include FormatDuration
+
   # Follow a user
   def follow(followed_id, user_id)
     user = User.find(user_id)
@@ -55,20 +58,22 @@ class UserService
   def average_sleep_duration(user_id)
     user = User.find(user_id)
 
-    # Calculate the average duration (in seconds) from sleep records in the last week
-    average_duration_seconds = user.sleep_records.from_last_week.average(Arel.sql('clock_out - clock_in')).to_f
+    # Fetch sleep records from the last week
+    sleep_records = user.sleep_records.from_last_week
 
     # Guard clause: return error if no sleep data is available
-    if average_duration_seconds <= 0
+    if sleep_records.empty?
       return {
         success: false,
         data: { message: 'No sleep data available for user' }
       }
     end
 
-    # Calculate hours and minutes from the average duration in seconds
-    hours = (average_duration_seconds / 3600).floor
-    minutes = ((average_duration_seconds % 3600) / 60).round
+    # Calculate the average duration (in seconds)
+    average_duration_seconds = sleep_records.average(Arel.sql('clock_out - clock_in')).to_f
+
+    # Format the average duration into hours and minutes
+    formatted_duration = format_duration_in_hours_and_minutes(average_duration_seconds)
 
     # Return the result with detailed user information
     {
@@ -76,43 +81,10 @@ class UserService
       data: {
         user_id: user.id,
         user_name: user.name,
-        hours: hours,
-        minutes: minutes
+        hours: formatted_duration[:hours],
+        minutes: formatted_duration[:minutes]
+
       }
     }
-  end
-
-  private
-
-  # Format the sleep records into the required format
-  # Format sleep records with readable and analytical duration
-  def format_sleep_records(sleep_records)
-    sleep_records.map do |record|
-      duration_seconds = record.clock_out - record.clock_in
-      hours = (duration_seconds / 3600).floor
-      minutes = ((duration_seconds % 3600) / 60).round
-
-      # Add analytical insights based on the duration
-      duration_category = if duration_seconds < 6.hours.to_i
-                            'short sleep'
-                          elsif duration_seconds.between?(6.hours.to_i, 9.hours.to_i)
-                            'normal sleep'
-                          else
-                            'long sleep'
-                          end
-
-      {
-        user_id: record.user.id,
-        user_name: record.user.name,
-        clock_in: record.clock_in,
-        clock_out: record.clock_out,
-        duration: {
-          total_seconds: duration_seconds,
-          hours: hours,
-          minutes: minutes,
-          category: duration_category
-        }
-      }
-    end
   end
 end
